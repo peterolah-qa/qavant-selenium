@@ -1,0 +1,74 @@
+name: Selenium Tests (Java)
+
+# Quality gate + publisher: runs the Selenium/TestNG suite against the live
+# site and writes a status.json (test count, pass rate, run count) back to
+# main. status.json pushes are path-ignored so they never re-trigger this.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['status.json']
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 7 * * *'   # daily, after the Playwright (6:00) and Newman (6:30) suites
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to commit status.json back to the repo
+
+jobs:
+  test:
+    runs-on: ubuntu-latest   # Chrome is preinstalled; Selenium Manager matches the driver
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Selenium suite
+        id: tests
+        continue-on-error: true   # publish status even when tests fail
+        run: mvn -B test
+        env:
+          QAVANT_BASE_URL: ${{ vars.BASE_URL || 'https://qavant.dev' }}
+
+      - name: Generate status.json
+        if: always()
+        run: node scripts/report-status.mjs
+
+      - name: Publish status.json to main
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          git config user.name "qavant-ci"
+          git config user.email "ci@qavant.dev"
+          git add status.json
+          git diff --staged --quiet && exit 0 || git commit -m "chore: update Selenium status [skip ci]"
+          # main may have moved while the run was in flight — rebase, keep our
+          # status.json on conflict, retry once.
+          git push || {
+            git fetch origin main
+            git rebase -X theirs origin/main
+            git push
+          }
+
+      - name: Upload surefire reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 14
+
+      - name: Enforce test result
+        if: steps.tests.outcome == 'failure'
+        run: |
+          echo "Selenium tests failed — failing the build."
+          exit 1

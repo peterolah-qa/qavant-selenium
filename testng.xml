@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="qavant.dev UI suite" verbose="1">
+  <test name="qavant.dev — Selenium 4 / Page Object Model">
+    <classes>
+      <class name="dev.qavant.tests.SmokeTests"/>
+      <class name="dev.qavant.tests.I18nTests"/>
+      <class name="dev.qavant.tests.ContactFormTests"/>
+      <class name="dev.qavant.tests.CertBadgeTests"/>
+    </classes>
+  </test>
+</suite>

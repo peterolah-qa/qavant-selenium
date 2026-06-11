@@ -1,0 +1,5 @@
+target/
+status.json.bak
+.idea/
+*.iml
+.DS_Store

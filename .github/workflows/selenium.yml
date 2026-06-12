@@ -69,22 +69,26 @@ jobs:
           path: gh-pages
 
       - name: Build Allure report (with history)
-        uses: simple-elf/allure-report-action@v1.12
         if: always() && github.event_name != 'pull_request'
-        with:
-          allure_results: target/allure-results
-          gh_pages: gh-pages
-          allure_report: allure-report
-          allure_history: allure-history
-          keep_reports: 20
+        run: |
+          if [ ! -d target/allure-results ]; then
+            echo "no allure-results found (tests did not run?) — skipping report build"
+            exit 0
+          fi
+          npm install -g allure-commandline@2.32.0
+          # carry the trend history over from the previously published report
+          if [ -d gh-pages/history ]; then
+            cp -r gh-pages/history target/allure-results/history
+          fi
+          allure generate target/allure-results -o allure-report --clean
 
       - name: Publish report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
-        if: always() && github.event_name != 'pull_request'
+        if: always() && github.event_name != 'pull_request' && hashFiles('allure-report/index.html') != ''
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: allure-history
+          publish_dir: allure-report
 
       - name: Upload surefire reports
         if: ${{ !cancelled() }}

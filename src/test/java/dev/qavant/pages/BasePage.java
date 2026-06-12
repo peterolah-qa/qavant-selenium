@@ -1,6 +1,7 @@
 package dev.qavant.pages;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -32,5 +33,18 @@ public abstract class BasePage {
 
     protected WebElement clickable(By locator) {
         return wait.until(ExpectedConditions.elementToBeClickable(locator));
+    }
+
+    /**
+     * Scrolls an element into the viewport the way a user would.
+     * The site reveals below-the-fold content via IntersectionObserver
+     * (elements start at opacity 0), so anything outside the initial
+     * viewport must be scrolled to BEFORE waiting for visibility.
+     */
+    protected WebElement scrollTo(By locator) {
+        WebElement el = present(locator);
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].scrollIntoView({block:'center'});", el);
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 }

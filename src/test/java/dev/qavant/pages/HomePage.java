@@ -48,7 +48,8 @@ public class HomePage extends BasePage {
     }
 
     public int metricCardCount() {
-        visible(By.id("liveMetrics"));
+        // the widget sits below the fold and reveals on scroll — scroll first
+        scrollTo(By.id("liveMetrics"));
         return driver.findElements(METRIC_CARDS).size();
     }
 

@@ -1,4 +1,5 @@
 # qavant-selenium
+[![Selenium Tests](https://github.com/peterolah-qa/qavant-selenium/actions/workflows/selenium.yml/badge.svg)](https://github.com/peterolah-qa/qavant-selenium/actions/workflows/selenium.yml)
 
 Selenium 4 + TestNG UI suite for [qavant.dev](https://qavant.dev) — the same site is also
 covered by a [Playwright suite](https://github.com/peterolah-qa/qavant-tests) (TypeScript)

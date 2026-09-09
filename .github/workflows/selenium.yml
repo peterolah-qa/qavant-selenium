@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # actions-gh-pages pushes the Allure report to gh-pages
 
 jobs:
   test:

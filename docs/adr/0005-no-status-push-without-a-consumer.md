@@ -20,7 +20,10 @@ permissions to contents: read.
 
 ## Consequences
 + No more races between CI and local pushes; three workarounds removed.
-+ The workflow no longer needs write access to the repository.
+- Write access could NOT be dropped: actions-gh-pages needs contents:
+  write to push the Allure report to gh-pages. Tried contents: read
+  first, the run failed with a 403. The push to main is gone, the
+  permission stays.
 - status.json is now behind the Actions UI rather than at a public URL.
   If the metrics widget is ever extended to this suite, publish it to
   gh-pages next to the Allure report — not back to main.

@@ -32,9 +32,16 @@ mvn test -Dheadless=false                     # watch the browser
 
 ## CI & live metrics
 
-GitHub Actions runs the suite on every push and daily at 07:00. After each run it
-publishes a `status.json` (passed / total / pass rate / run count) back to `main` —
-the qavant.dev metrics widget reads files like this one to show **real** CI results.
+GitHub Actions runs the suite on every push and daily at 07:00, against the live
+site rather than a build artifact — this suite is a synthetic monitor, not a build
+gate (ADR 0003). The browser comes from a pinned Selenium Grid container started
+from the same `docker-compose.yml` used locally (ADR 0002).
+
+Each run generates a `status.json` (passed / total / pass rate / run count) and
+attaches it to the run artifacts alongside the surefire reports. It is not pushed
+back to `main`: nothing reads it, and doing so raced with local pushes (ADR 0005).
+The Allure report, with trend history, is published to GitHub Pages on every run —
+including red ones.
 
 ## Decision records
 

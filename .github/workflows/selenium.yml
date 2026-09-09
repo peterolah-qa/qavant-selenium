@@ -1,12 +1,11 @@
 name: Selenium Tests (Java)
 
-# Quality gate + publisher: runs the Selenium/TestNG suite against the live
-# site and writes a status.json (test count, pass rate, run count) back to
-# main. status.json pushes are path-ignored so they never re-trigger this.
+# Synthetic monitor: runs the Selenium/TestNG suite against the live site.
+# status.json is generated and attached to the run artifacts — it is NOT
+# pushed back to main, because nothing consumes it (see ADR 0005).
 on:
   push:
     branches: [main]
-    paths-ignore: ['status.json']
   pull_request:
     branches: [main]
   schedule:
@@ -14,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # needed to commit status.json back to the repo
+  contents: read
 
 jobs:
   test:
@@ -54,21 +53,6 @@ jobs:
         if: always()
         run: node scripts/report-status.mjs
 
-      - name: Publish status.json to main
-        if: always() && github.event_name != 'pull_request'
-        run: |
-          git config user.name "qavant-ci"
-          git config user.email "ci@qavant.dev"
-          git add status.json
-          git diff --staged --quiet && exit 0 || git commit -m "chore: update Selenium status [skip ci]"
-          # main may have moved while the run was in flight — rebase, keep our
-          # status.json on conflict, retry once.
-          git push || {
-            git fetch origin main
-            git rebase -X theirs origin/main
-            git push
-          }
-
       # ---------- Allure report -> GitHub Pages (published on every run, even red) ----------
       - name: Load Allure history from gh-pages
         uses: actions/checkout@v4
@@ -105,7 +89,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: target/surefire-reports/
+          path: |
+            target/surefire-reports/
+            status.json
           retention-days: 14
 
       - name: Enforce test result

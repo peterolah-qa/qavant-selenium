@@ -81,7 +81,7 @@ public class HomePage extends BasePage {
 
     // --- cert badge ---
     public WebElement certBadge() {
-        return visible(CERT_BADGE);
+        return scrollTo(CERT_BADGE);
     }
 
     // --- contact form ---

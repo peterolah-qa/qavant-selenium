@@ -1,0 +1,13 @@
+services:
+  chrome:
+    image: selenium/standalone-chromium:4.27.0
+    container_name: qavant-grid
+    shm_size: 2gb
+    ports:
+      - "4444:4444"   # WebDriver endpoint
+      - "7900:7900"   # noVNC — watch the run live, password: secret
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

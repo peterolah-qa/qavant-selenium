@@ -35,3 +35,7 @@ mvn test -Dheadless=false                     # watch the browser
 GitHub Actions runs the suite on every push and daily at 07:00. After each run it
 publishes a `status.json` (passed / total / pass rate / run count) back to `main` —
 the qavant.dev metrics widget reads files like this one to show **real** CI results.
+
+## Decision records
+
+Why this suite is built the way it is: [docs/adr](docs/adr/)

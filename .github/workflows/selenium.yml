@@ -50,4 +50,66 @@ jobs:
         if: steps.tests.outcome == 'failure'
         run: docker compose logs --no-color chrome | tail -100
 
-      - name: Generate
+      - name: Generate status.json
+        if: always()
+        run: node scripts/report-status.mjs
+
+      - name: Publish status.json to main
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          git config user.name "qavant-ci"
+          git config user.email "ci@qavant.dev"
+          git add status.json
+          git diff --staged --quiet && exit 0 || git commit -m "chore: update Selenium status [skip ci]"
+          # main may have moved while the run was in flight — rebase, keep our
+          # status.json on conflict, retry once.
+          git push || {
+            git fetch origin main
+            git rebase -X theirs origin/main
+            git push
+          }
+
+      # ---------- Allure report -> GitHub Pages (published on every run, even red) ----------
+      - name: Load Allure history from gh-pages
+        uses: actions/checkout@v4
+        if: always() && github.event_name != 'pull_request'
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Build Allure report (with history)
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          if [ ! -d target/allure-results ]; then
+            echo "no allure-results found (tests did not run?) — skipping report build"
+            exit 0
+          fi
+          npm install -g allure-commandline@2.32.0
+          # carry the trend history over from the previously published report
+          if [ -d gh-pages/history ]; then
+            cp -r gh-pages/history target/allure-results/history
+          fi
+          allure generate target/allure-results -o allure-report --clean
+
+      - name: Publish report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: always() && github.event_name != 'pull_request' && hashFiles('allure-report/index.html') != ''
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
+
+      - name: Upload surefire reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 14
+
+      - name: Enforce test result
+        if: steps.tests.outcome == 'failure'
+        run: |
+          echo "Selenium tests failed — failing the build."
+          exit 1
